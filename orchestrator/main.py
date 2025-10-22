@@ -9,6 +9,7 @@ from phoneinfoga_connector import phoneinfoga_lookup
 from profession_filter import matches_profession
 from providers_min import google_search, verify_email_reacher
 from scrape_embed import fetch_and_embed, get_model
+from harvester_connector import run_theharvester
 
 app = FastAPI(title="OSINT Orchestrator (OSS)")
 
@@ -21,6 +22,11 @@ class SearchRequest(BaseModel):
 
 class VerifyEmailReq(BaseModel):
     email: str
+
+
+@app.get("/health")
+def health():
+    return {"status": "ok"}
 
 
 @app.post("/search")
@@ -97,7 +103,9 @@ def export_csv():
         rows.append({"Person": "", "Email": "", "Phone": "", "URL": h.get("url", ""), "Title": h.get("title", ""),
                      "Snippet": h.get("snippet", ""), "Source": h.get("source", ""), "Score": h.get("_score", 0)})
     import os, pandas as pd
-    out_path = os.path.join(os.path.dirname(__file__), "exports", "entities.csv")
+    out_dir = os.path.join(os.path.dirname(__file__), "exports")
+    os.makedirs(out_dir, exist_ok=True)
+    out_path = os.path.join(out_dir, "entities.csv")
     pd.DataFrame(rows).to_csv(out_path, index=False)
     return {"status": "ok", "file": "exports/entities.csv", "rows": len(rows)}
 

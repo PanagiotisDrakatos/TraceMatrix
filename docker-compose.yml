@@ -1,5 +1,3 @@
-
-version: "3.8"
 services:
   orchestrator:
     build: ./orchestrator
@@ -34,6 +32,7 @@ services:
         - discovery.type=single-node
         - OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m
         - OPENSEARCH_INITIAL_ADMIN_PASSWORD=${OPENSEARCH_INITIAL_ADMIN_PASSWORD}
+        - plugins.security.disabled=true
     ulimits:
       nproc: 65535
       nofile:
@@ -43,7 +42,7 @@ services:
       - "9200:9200"
 
   opensearch-dashboards:
-    image: opensearchproject/opensearch-dashboards:latest
+    image: opensearchproject/opensearch-dashboards:2
     environment:
       - OPENSEARCH_HOSTS=["http://opensearch:9200"]
     ports:
@@ -62,14 +61,17 @@ services:
       - LOG_LEVEL=info
 
   social-analyzer:
-    image: qeeqbox/social-analyzer:latest
+    image: bukshee/social-analyzer:latest
+    # HTTP only (no SSL). Expose GUI via port 9005.
     ports:
         - "9005:9005"
-
+    environment:
+      - PORT=9005
+    restart: unless-stopped
 
   theharvester:
-    image: secsi/theharvester:latest
-    entrypoint: [ "/bin/bash" ]
+    image: ghcr.io/laramies/theharvester:latest
+    entrypoint: [ "/bin/sh", "-c", "tail -f /dev/null" ]
     tty: true
     stdin_open: true
     volumes:
@@ -80,4 +82,3 @@ services:
     ports:
         - "8083:8080"
     command: "serve -p 8080"
-

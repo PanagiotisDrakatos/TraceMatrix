@@ -8,17 +8,17 @@ A fully **open-source** OSINT (Open Source Intelligence) stack that combines mod
 ### Core Services
 
 - **🎯 Orchestrator (FastAPI)** — Central API with multiple connectors:
-  - Google Custom Search Engine (CSE)
-  - SearXNG integration (metasearch engine)
-  - Reacher (email verification)
-  - Social-Analyzer (username OSINT)
-  - Trafilatura (intelligent web scraping)
-  - Sentence-Transformers (semantic embeddings)
-  
+    - Google Custom Search Engine (CSE)
+    - SearXNG integration (metasearch engine)
+    - Reacher (email verification)
+    - Social-Analyzer (username OSINT)
+    - Trafilatura (intelligent web scraping)
+    - Sentence-Transformers (semantic embeddings)
+
 - **🔎 OpenSearch** — Full-text search with:
-  - BM25 ranking algorithm
-  - k-NN vector search
-  - Hybrid Search with RRF (Reciprocal Rank Fusion)
+    - BM25 ranking algorithm
+    - k-NN vector search
+    - Hybrid Search with RRF (Reciprocal Rank Fusion)
 
 - **📊 OpenSearch Dashboards** — Web UI for visualization and exploration
 - **🌐 SearXNG** — Privacy-respecting metasearch engine
@@ -33,7 +33,7 @@ A fully **open-source** OSINT (Open Source Intelligence) stack that combines mod
 ✅ Email verification  
 ✅ Social media username enumeration  
 ✅ CSV export for Maltego CE integration  
-✅ 100% open-source stack  
+✅ 100% open-source stack
 
 ---
 
