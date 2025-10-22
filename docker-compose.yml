@@ -1,0 +1,83 @@
+
+version: "3.8"
+services:
+  orchestrator:
+    build: ./orchestrator
+    ports:
+      - "8000:8000"
+    environment:
+      - GOOGLE_CSE_API_KEY=${GOOGLE_CSE_API_KEY}
+      - GOOGLE_CSE_CX=${GOOGLE_CSE_CX}
+      - REACHER_BASE_URL=${REACHER_BASE_URL}
+      - SEARX_BASE=${SEARX_BASE}
+      - OPENSEARCH_URL=${OPENSEARCH_URL}
+      - REDIS_URL=${REDIS_URL}
+      - OSINT_INDEX=${OSINT_INDEX}
+      - EMBED_DIM=${EMBED_DIM}
+    depends_on:
+      - searxng
+      - opensearch
+      - redis
+      - reacher
+      - social-analyzer
+
+  searxng:
+    image: searxng/searxng:latest
+    ports:
+      - "8081:8080"
+    environment:
+      - SearXNG__system__secret_key=${SEARXNG_SECRET_KEY}
+
+  opensearch:
+    image: opensearchproject/opensearch:2
+    environment:
+        - discovery.type=single-node
+        - OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m
+        - OPENSEARCH_INITIAL_ADMIN_PASSWORD=${OPENSEARCH_INITIAL_ADMIN_PASSWORD}
+    ulimits:
+      nproc: 65535
+      nofile:
+        soft: 65535
+        hard: 65535
+    ports:
+      - "9200:9200"
+
+  opensearch-dashboards:
+    image: opensearchproject/opensearch-dashboards:latest
+    environment:
+      - OPENSEARCH_HOSTS=["http://opensearch:9200"]
+    ports:
+      - "5601:5601"
+
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
+
+  reacher:
+    image: reacherhq/backend:latest
+    ports:
+      - "8082:8080"
+    environment:
+      - LOG_LEVEL=info
+
+  social-analyzer:
+    image: qeeqbox/social-analyzer:latest
+    ports:
+        - "9005:9005"
+
+
+  theharvester:
+    image: secsi/theharvester:latest
+    entrypoint: [ "/bin/bash" ]
+    tty: true
+    stdin_open: true
+    volumes:
+      - ./data/harvester_results:/results
+
+  phoneinfoga:
+    image: sundowndev/phoneinfoga:latest
+    ports:
+        - "8083:8080"
+    command: "serve -p 8080"
+
