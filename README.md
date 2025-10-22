@@ -102,7 +102,8 @@ Wait until all services are up (~2-3 minutes for the first time).
 | **OpenSearch** | http://localhost:9200 | Search engine API |
 | **OpenSearch Dashboards** | http://localhost:5601 | Data visualization & exploration |
 | **Reacher** | http://localhost:8082 | Email verification service |
-| **Social-Analyzer** | http://localhost:9000 | Username enumeration tool |
+| **Social-Analyzer** | http://localhost:9005 | Username enumeration tool |
+| **PhoneInfoga** | http://localhost:8083 | Phone number OSINT tool |
 
 ---
 
@@ -112,11 +113,14 @@ Wait until all services are up (~2-3 minutes for the first time).
 
 | Endpoint | Method | Description |
 |----------|--------|-----------|
+| `/orchestrate` | POST | **Multi-step OSINT workflow**: search → extract entities → verify → enrich → export |
 | `/search` | POST | Basic search with Google CSE / SearXNG + profession filtering |
 | `/verify_email` | POST | Email verification via Reacher |
 | `/ingest_urls` | POST | Scraping, embedding generation & OpenSearch indexing |
 | `/search_hybrid` | POST | Hybrid search (BM25 + k-NN + RRF fusion) |
 | `/social_lookup` | POST | Username enumeration across 1000+ social platforms |
+| `/phone_lookup` | POST | Phone number OSINT via PhoneInfoga |
+| `/harvest_email` | POST | Email & subdomain harvesting via theHarvester |
 | `/export_csv` | GET | Export data in CSV format for Maltego |
 
 For **full documentation** and **interactive testing**, open Swagger UI: http://localhost:8000/docs
@@ -124,6 +128,70 @@ For **full documentation** and **interactive testing**, open Swagger UI: http://
 ---
 
 ## 💡 Usage Examples
+
+### 🎯 Orchestrate — Full OSINT Workflow (Recommended)
+
+The `/orchestrate` endpoint is the most powerful feature, combining all services in a multi-step workflow:
+
+**Fields:** `name`, `keywords`, `phone` (optional), limits...
+
+**Behavior:**
+- Runs initial web search, extracts emails & usernames, runs social lookups and email checks, performs hybrid search (BM25+kNN), ingests URLs, and exports CSV for Maltego.
+- **Phone handling:** If `phone` is NOT provided, the system will NOT include it in the initial search. Instead, it attempts to discover phone numbers from initial results (snippets/titles/URLs) and, if found, uses them downstream (PhoneInfoga & hybrid query), limited by `phone_limit`.
+
+**Params (limits):**
+- `search_limit`, `social_limit`, `email_limit`, `hybrid_k`, `ingest_limit`, `export_limit`
+- `phone_limit` (how many discovered phones to use when `phone` is not provided)
+
+**Example:**
+
+```bash
+curl -X POST "http://localhost:8000/orchestrate" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "John Doe",
+    "keywords": ["athens", "security"],
+    "search_limit": 15,
+    "social_limit": 10,
+    "email_limit": 20,
+    "phone_limit": 5,
+    "hybrid_k": 20,
+    "ingest_limit": 60,
+    "export_limit": 2000
+  }'
+```
+
+**With phone number:**
+
+```bash
+curl -X POST "http://localhost:8000/orchestrate" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "John Doe",
+    "keywords": ["athens", "security"],
+    "phone": "+3069XXXXXXXX",
+    "search_limit": 15,
+    "social_limit": 10,
+    "email_limit": 20,
+    "phone_limit": 5,
+    "hybrid_k": 20,
+    "ingest_limit": 60,
+    "export_limit": 2000
+  }'
+```
+
+**Response includes:**
+- `counts`: Statistics on discovered entities (URLs, emails, usernames, phones)
+- `samples`: Preview of discovered entities
+- `phones_found`: List of discovered phone numbers (if phone not provided)
+- `phones_considered`: Phones used for downstream enrichment
+- `phoneinfoga`: PhoneInfoga results for each phone
+- `social`: Social media profile lookups
+- `emails`: Email verification results
+- `ingested`: URLs successfully indexed in OpenSearch
+- `csv_path`: Path to exported CSV for Maltego
+
+---
 
 ### 🔎 Web Search with Profession Filtering
 
@@ -178,6 +246,22 @@ curl -X POST "http://localhost:8000/verify_email" \
     "email": "example@domain.com"
   }'
 ```
+
+### 📱 Phone Number Lookup
+
+```bash
+# Via Orchestrator API
+curl -X POST "http://localhost:8000/phone_lookup" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "phone": "+306912345678"
+  }'
+
+# Direct PhoneInfoga API
+curl -X GET "http://localhost:8083/api/numbers/+306912345678"
+```
+
+**Note:** Phone numbers must be in international format (E.164), e.g., `+306912345678` for Greece, `+14155552671` for USA.
 
 ### 📊 Export for Maltego CE
 
@@ -346,6 +430,11 @@ curl -X POST "http://localhost:8000/social_lookup" \
 curl -X POST "http://localhost:8000/verify_email" \
   -H "Content-Type: application/json" \
   -d '{"email":"john.doe@example.com"}'
+
+# Optional Step 4: Phone lookup (if phone number found)
+curl -X POST "http://localhost:8000/phone_lookup" \
+  -H "Content-Type: application/json" \
+  -d '{"phone":"+306912345678"}'
 ```
 
 **⏱️ Time:** 30-60 seconds  
@@ -467,9 +556,9 @@ This stack is a **starter template**. You can extend it with:
 
 - **[Sherlock](https://github.com/sherlock-project/sherlock)** — Username search across 400+ social networks
 - **[Maigret](https://github.com/soxoj/maigret)** — Collect info about person by username
-- **[theHarvester](https://github.com/laramies/theHarvester)** — Email, subdomain & people intelligence
-- **[PhoneInfoga](https://github.com/sundowndev/phoneinfoga)** — Phone number OSINT
+- **[theHarvester](https://github.com/laramies/theHarvester)** — Email, subdomain & people intelligence (already included in stack)
 - **[SpiderFoot](https://github.com/smicallef/spiderfoot)** — Automated OSINT reconnaissance
+- **[Holehe](https://github.com/megadose/holehe)** — Check if email is used on different sites
 - **[Holehe](https://github.com/megadose/holehe)** — Check if email is used on different sites
 
 ### Customization Tips

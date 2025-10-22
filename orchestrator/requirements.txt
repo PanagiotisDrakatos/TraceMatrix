@@ -1,4 +1,3 @@
-
 fastapi
 uvicorn[standard]
 requests
@@ -13,3 +12,4 @@ pydantic
 opensearch-py
 numpy
 pandas
+phonenumbers

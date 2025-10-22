@@ -12,6 +12,8 @@ services:
       - REDIS_URL=${REDIS_URL}
       - OSINT_INDEX=${OSINT_INDEX}
       - EMBED_DIM=${EMBED_DIM}
+    volumes:
+      - ./exports:/app/exports
     depends_on:
       - searxng
       - opensearch
