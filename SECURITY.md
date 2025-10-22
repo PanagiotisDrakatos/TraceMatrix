@@ -1,50 +1,50 @@
 # 🔒 Security Notice
 
-## ⚠️ ΠΡΟΣΟΧΗ: API Keys έχουν εκτεθεί
+## ⚠️ WARNING: API Keys Have Been Exposed
 
-Το repository αυτό περιέχει **hardcoded API keys** σε προηγούμενα commits που πρέπει να θεωρηθούν **εκτεθειμένα**:
+This repository contains **hardcoded API keys** in previous commits that should be considered **exposed**:
 
 - Google CSE API Key: `AIzaSyAHccfDlj4_wb5-XnfviNrianyNkLaV1xI`
 - Google CSE CX: `f4e6d444f64204539`
 
-### 🛠️ Άμεσες Ενέργειες που Πρέπει να Κάνεις:
+### 🛠️ Immediate Actions You Must Take:
 
-1. **Ακύρωση Google API Key:**
-   - Πήγαινε στο [Google Cloud Console](https://console.cloud.google.com/apis/credentials)
-   - Βρες το API key και κάνε "Delete" ή "Restrict"
-   - Δημιούργησε νέο API key
+1. **Revoke Google API Key:**
+   - Go to [Google Cloud Console](https://console.cloud.google.com/apis/credentials)
+   - Find the API key and click "Delete" or "Restrict"
+   - Create a new API key
 
-2. **Δημιουργία νέων credentials:**
-   - Άνοιξε το `.env` file
-   - Βάλε τα νέα credentials εκεί
-   - ΜΗΝ κάνεις commit το `.env` file
+2. **Create New Credentials:**
+   - Open the `.env` file
+   - Add the new credentials there
+   - DO NOT commit the `.env` file
 
-3. **Καθαρισμός Git History (Προαιρετικό αλλά Συνιστάται):**
+3. **Clean Git History (Optional but Recommended):**
    
-   Αν θέλεις να αφαιρέσεις τα credentials από όλο το Git history:
+   If you want to remove credentials from the entire Git history:
    
    ```bash
-   # Χρησιμοποίησε το BFG Repo-Cleaner
+   # Use BFG Repo-Cleaner
    # https://rtyley.github.io/bfg-repo-cleaner/
    
-   # Ή χρησιμοποίησε git-filter-repo
+   # Or use git-filter-repo
    git filter-repo --invert-paths --path docker-compose.yml
    ```
    
-   > ⚠️ Αυτό θα ξαναγράψει το history και θα χρειαστεί force push!
+   > ⚠️ This will rewrite history and require a force push!
 
-### 📝 Από εδώ και πέρα:
+### 📝 From Now On:
 
-Το repository είναι τώρα ρυθμισμένο σωστά:
-- ✅ Το `.env` file είναι στο `.gitignore`
-- ✅ Το `docker-compose.yml` χρησιμοποιεί μεταβλητές περιβάλλοντος
-- ✅ Το `.env.example` παρέχει template για νέους χρήστες
+The repository is now properly configured:
+- ✅ The `.env` file is in `.gitignore`
+- ✅ `docker-compose.yml` uses environment variables
+- ✅ `.env.example` provides a template for new users
 
-**Πάντα ελέγχεις πριν κάνεις commit:**
+**Always check before committing:**
 ```bash
 git status
 git diff
 ```
 
-Αν δεις οποιοδήποτε API key ή password, ΜΗΝ το κάνεις commit!
+If you see any API key or password, DO NOT commit it!
 

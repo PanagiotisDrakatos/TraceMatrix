@@ -1,13 +1,13 @@
 
 # 🔍 OSINT Stack (100% Open-Source) — Dockerized
 
-Ένα πλήρως **ανοιχτού κώδικα** OSINT (Open Source Intelligence) stack που συνδυάζει σύγχρονες τεχνολογίες αναζήτησης, scraping, και ανάλυσης δεδομένων.
+A fully **open-source** OSINT (Open Source Intelligence) stack that combines modern search technologies, scraping, and data analysis.
 
-## 📦 Τι Περιλαμβάνει
+## 📦 What's Included
 
 ### Core Services
 
-- **🎯 Orchestrator (FastAPI)** — Κεντρικό API με πολλαπλά connectors:
+- **🎯 Orchestrator (FastAPI)** — Central API with multiple connectors:
   - Google Custom Search Engine (CSE)
   - SearXNG integration (metasearch engine)
   - Reacher (email verification)
@@ -15,46 +15,46 @@
   - Trafilatura (intelligent web scraping)
   - Sentence-Transformers (semantic embeddings)
   
-- **🔎 OpenSearch** — Full-text search με:
+- **🔎 OpenSearch** — Full-text search with:
   - BM25 ranking algorithm
   - k-NN vector search
-  - Hybrid Search με RRF (Reciprocal Rank Fusion)
+  - Hybrid Search with RRF (Reciprocal Rank Fusion)
 
-- **📊 OpenSearch Dashboards** — Web UI για visualization και exploration
+- **📊 OpenSearch Dashboards** — Web UI for visualization and exploration
 - **🌐 SearXNG** — Privacy-respecting metasearch engine
 - **✉️ Reacher** — Email verification service
-- **🔗 Social-Analyzer** — Username enumeration σε 1000+ platforms
-- **⚡ Redis** — Caching layer για performance
+- **🔗 Social-Analyzer** — Username enumeration across 1000+ platforms
+- **⚡ Redis** — Caching layer for performance
 
 ### Key Features
 
-✅ Web scraping με semantic analysis  
+✅ Web scraping with semantic analysis  
 ✅ Hybrid search (BM25 + vector embeddings)  
 ✅ Email verification  
 ✅ Social media username enumeration  
-✅ CSV export για Maltego CE integration  
+✅ CSV export for Maltego CE integration  
 ✅ 100% open-source stack  
 
 ---
 
-## 🚀 Τρέξιμο
+## 🚀 Getting Started
 
-### Προαπαιτούμενα
+### Prerequisites
 
-- Docker & Docker Compose εγκατεστημένα
-- (Προαιρετικά) Google Programmable Search API credentials
+- Docker & Docker Compose installed
+- (Optional) Google Programmable Search API credentials
 
-### Βήματα Εγκατάστασης
+### Installation Steps
 
-**1. Clone το repository:**
+**1. Clone the repository:**
 ```bash
 git clone <repo-url>
 cd Osint
 ```
 
-**2. Ρύθμιση Environment Variables:**
+**2. Environment Variables Setup:**
 
-Αντίγραψε το `.env.example` σε `.env` και συμπλήρωσε τα δικά σου credentials:
+Copy `.env.example` to `.env` and fill in your credentials:
 
 ```bash
 # Linux/Mac
@@ -64,38 +64,38 @@ cp .env.example .env
 copy .env.example .env
 ```
 
-Άνοιξε το `.env` και άλλαξε τις τιμές:
+Open `.env` and change the values:
 
 ```env
-# Google Custom Search Engine (προαιρετικό)
+# Google Custom Search Engine (optional)
 GOOGLE_CSE_API_KEY=your_google_cse_api_key_here
 GOOGLE_CSE_CX=your_google_cse_cx_here
 
-# SearXNG Secret (άλλαξε σε τυχαίο string)
+# SearXNG Secret (change to a random string)
 SEARXNG_SECRET_KEY=change_this_to_a_random_string
 
-# OpenSearch Password (άλλαξε σε ισχυρό password)
+# OpenSearch Password (change to a strong password)
 OPENSEARCH_INITIAL_ADMIN_PASSWORD=change_this_to_a_strong_password
 
-# Τα υπόλοιπα μπορούν να μείνουν ως έχουν
+# The rest can remain as they are
 ```
 
-> ⚠️ **ΣΗΜΑΝΤΙΚΟ:** Μην κάνεις commit το `.env` file! Είναι ήδη στο `.gitignore` για την ασφάλειά σου.
+> ⚠️ **IMPORTANT:** Don't commit the `.env` file! It's already in `.gitignore` for your security.
 
-> 💡 Αν δεν ορίσεις τα Google CSE credentials, το `/search` endpoint θα λειτουργεί με περιορισμένες δυνατότητες (μόνο SearXNG).
+> 💡 If you don't set the Google CSE credentials, the `/search` endpoint will work with limited capabilities (SearXNG only).
 
-**3. Εκκίνηση του stack:**
+**3. Start the stack:**
 ```bash
 docker compose up --build
 ```
 
-Περίμενε μέχρι να σηκωθούν όλα τα services (~2-3 λεπτά για πρώτη φορά).
+Wait until all services are up (~2-3 minutes for the first time).
 
 ---
 
-## 🌐 Διαθέσιμα Services
+## 🌐 Available Services
 
-| Service | URL | Περιγραφή |
+| Service | URL | Description |
 |---------|-----|-----------|
 | **Orchestrator API** | http://localhost:8000/docs | FastAPI Swagger UI (interactive docs) |
 | **SearXNG** | http://localhost:8081 | Metasearch engine interface |
@@ -108,31 +108,31 @@ docker compose up --build
 
 ## 📡 API Endpoints
 
-### Διαθέσιμα Endpoints
+### Available Endpoints
 
-| Endpoint | Method | Περιγραφή |
+| Endpoint | Method | Description |
 |----------|--------|-----------|
-| `/search` | POST | Βασική αναζήτηση με Google CSE / SearXNG + profession filtering |
-| `/verify_email` | POST | Email verification μέσω Reacher |
+| `/search` | POST | Basic search with Google CSE / SearXNG + profession filtering |
+| `/verify_email` | POST | Email verification via Reacher |
 | `/ingest_urls` | POST | Scraping, embedding generation & OpenSearch indexing |
 | `/search_hybrid` | POST | Hybrid search (BM25 + k-NN + RRF fusion) |
-| `/social_lookup` | POST | Username enumeration σε 1000+ social platforms |
-| `/export_csv` | GET | Export δεδομένων σε CSV format για Maltego |
+| `/social_lookup` | POST | Username enumeration across 1000+ social platforms |
+| `/export_csv` | GET | Export data in CSV format for Maltego |
 
-Για **πλήρη τεκμηρίωση** και **interactive testing**, άνοιξε το Swagger UI: http://localhost:8000/docs
+For **full documentation** and **interactive testing**, open Swagger UI: http://localhost:8000/docs
 
 ---
 
-## 💡 Παραδείγματα Χρήσης
+## 💡 Usage Examples
 
-### 🔎 Web Search με Profession Filtering
+### 🔎 Web Search with Profession Filtering
 
 ```bash
 curl -X POST "http://localhost:8000/search" \
   -H "Content-Type: application/json" \
   -d '{
-    "name": "Γιώργος Παπαδόπουλος",
-    "keywords": ["αρχιτέκτονας"],
+    "name": "John Doe",
+    "keywords": ["architect"],
     "limit": 5
   }'
 ```
@@ -143,7 +143,7 @@ curl -X POST "http://localhost:8000/search" \
 curl -X POST "http://localhost:8000/social_lookup" \
   -H "Content-Type: application/json" \
   -d '{
-    "username": "giorgospapadopoulos"
+    "username": "johndoe"
   }'
 ```
 
@@ -164,7 +164,7 @@ curl -X POST "http://localhost:8000/ingest_urls" \
 curl -X POST "http://localhost:8000/search_hybrid" \
   -H "Content-Type: application/json" \
   -d '{
-    "query": "Giorgos Papadopoulos architect Athens",
+    "query": "John Doe architect Athens",
     "k": 10
   }'
 ```
@@ -179,95 +179,95 @@ curl -X POST "http://localhost:8000/verify_email" \
   }'
 ```
 
-### 📊 Export για Maltego CE
+### 📊 Export for Maltego CE
 
 ```bash
 curl "http://localhost:8000/export_csv"
 ```
 
-Το αρχείο δημιουργείται στο: `orchestrator/exports/entities.csv`
+The file is created at: `orchestrator/exports/entities.csv`
 
-**Import στο Maltego CE:**
-1. Άνοιξε το Maltego CE
-2. Πήγαινε στο **Import** → **CSV**
-3. Διάλεξε το `entities.csv` αρχείο
-4. Map τα πεδία σύμφωνα με τις οδηγίες
+**Import into Maltego CE:**
+1. Open Maltego CE
+2. Go to **Import** → **CSV**
+3. Select the `entities.csv` file
+4. Map fields according to instructions
 
 ---
 
-## 🎯 Workflows & Σενάρια Χρήσης
+## 🎯 Workflows & Use Cases
 
-### Πότε να χρησιμοποιήσεις ποιο endpoint;
+### When to use which endpoint?
 
-#### 1️⃣ Θέλω απλώς να δω αν "υπάρχει" κάποιος + ρόλος/επάγγελμα
+#### 1️⃣ I want to simply check if someone exists + their role/profession
 
-**Βήματα:**
+**Steps:**
 ```bash
-# 1. Βασική αναζήτηση με name + keywords
+# 1. Basic search with name + keywords
 curl -X POST "http://localhost:8000/search" \
   -H "Content-Type: application/json" \
   -d '{
-    "name": "Γιώργος Παπαδόπουλος",
-    "keywords": ["αρχιτέκτονας"],
+    "name": "John Doe",
+    "keywords": ["architect"],
     "limit": 10
   }'
 
-# 2. (Προαιρετικά) Verify email αν βρεθεί
+# 2. (Optional) Verify email if found
 curl -X POST "http://localhost:8000/verify_email" \
   -H "Content-Type: application/json" \
   -d '{
-    "email": "giorgos.papadopoulos@example.com"
+    "email": "john.doe@example.com"
   }'
 
-# 3. (Προαιρετικά) Social lookup για footprints
+# 3. (Optional) Social lookup for footprints
 curl -X POST "http://localhost:8000/social_lookup" \
   -H "Content-Type: application/json" \
   -d '{
-    "username": "giorgospapadopoulos"
+    "username": "johndoe"
   }'
 ```
 
-**Γιατί αυτό;**
-- ✅ Ελάχιστη τριβή, γρήγορο αποτέλεσμα
-- ✅ Μικρό κόστος (Google CSE quota)
-- ✅ Ideal για quick checks
+**Why this approach?**
+- ✅ Minimal friction, fast results
+- ✅ Low cost (Google CSE quota)
+- ✅ Ideal for quick checks
 
 ---
 
-#### 2️⃣ Θέλω usernames/προφίλ από πολλές πλατφόρμες
+#### 2️⃣ I want usernames/profiles from multiple platforms
 
-**Βήματα:**
+**Steps:**
 ```bash
-# Πήγαινε κατευθείαν σε Social-Analyzer
+# Go directly to Social-Analyzer
 curl -X POST "http://localhost:8000/social_lookup" \
   -H "Content-Type: application/json" \
   -d '{
-    "username": "giorgospapadopoulos"
+    "username": "johndoe"
   }'
 ```
 
-**Γιατί αυτό;**
-- ✅ Στοχευμένο για social media
-- ✅ Χωρίς Google quota
-- ✅ Συχνά πιο "καθαρά" hits για handles
-- ✅ 1000+ platforms σε ένα call
+**Why this approach?**
+- ✅ Targeted for social media
+- ✅ No Google quota usage
+- ✅ Often cleaner hits for handles
+- ✅ 1000+ platforms in one call
 
 ---
 
-#### 3️⃣ Θέλω υψηλή ακρίβεια και fast follow-up queries χωρίς ξανά πληρωμές
+#### 3️⃣ I want high accuracy and fast follow-up queries without additional costs
 
-**Βήματα:**
+**Steps:**
 ```bash
-# 1. Μάζεψε τις καλύτερες σελίδες (URLs)
+# 1. Collect the best pages (URLs)
 curl -X POST "http://localhost:8000/search" \
   -H "Content-Type: application/json" \
   -d '{
-    "name": "Γιώργος Παπαδόπουλος",
-    "keywords": ["αρχιτέκτονας", "Athens"],
+    "name": "John Doe",
+    "keywords": ["architect", "Athens"],
     "limit": 20
   }'
 
-# 2. Ingest τα URLs (batch processing)
+# 2. Ingest the URLs (batch processing)
 curl -X POST "http://localhost:8000/ingest_urls" \
   -H "Content-Type: application/json" \
   -d '{
@@ -280,11 +280,11 @@ curl -X POST "http://localhost:8000/ingest_urls" \
     "source": "web_search"
   }'
 
-# 3. Τρέξε πολλαπλές αναζητήσεις με hybrid search (γρήγορα & δωρεάν)
+# 3. Run multiple searches with hybrid search (fast & free)
 curl -X POST "http://localhost:8000/search_hybrid" \
   -H "Content-Type: application/json" \
   -d '{
-    "query": "Giorgos Papadopoulos architect Athens portfolio",
+    "query": "John Doe architect Athens portfolio",
     "k": 10
   }'
 
@@ -296,73 +296,73 @@ curl -X POST "http://localhost:8000/search_hybrid" \
   }'
 ```
 
-**Γιατί αυτό;**
-- ✅ Μετά το πρώτο ingest, οι αναζητήσεις είναι πολύ γρήγορες
-- ✅ Δεν "καίνε" Google quota για follow-up queries
-- ✅ Το ranking βελτιώνεται (BM25 + k-NN + RRF)
-- ✅ Ιδανικό για deep research
+**Why this approach?**
+- ✅ After initial ingest, searches are very fast
+- ✅ Doesn't consume Google quota for follow-up queries
+- ✅ Ranking improves (BM25 + k-NN + RRF)
+- ✅ Ideal for deep research
 
 ---
 
-#### 4️⃣ Θέλω γραφάκι/αναφορά
+#### 4️⃣ I want a graph/report
 
-**Βήματα:**
+**Steps:**
 ```bash
-# Όταν καταλήξεις στα entities, export σε CSV
+# When you've finalized entities, export to CSV
 curl "http://localhost:8000/export_csv" -o entities.csv
 
-# Άνοιξε στο Maltego CE:
+# Open in Maltego CE:
 # 1. Maltego CE → Import → CSV
-# 2. Διάλεξε το entities.csv
-# 3. Map τα πεδία (name, url, source, κτλ.)
-# 4. Visualize το graph
+# 2. Select entities.csv
+# 3. Map fields (name, url, source, etc.)
+# 4. Visualize the graph
 ```
 
-**Γιατί αυτό;**
-- ✅ Δεν χρειάζεται σε κάθε run
-- ✅ Μόνο για export/οπτικοποίηση
-- ✅ Ideal για παρουσιάσεις/reports
+**Why this approach?**
+- ✅ Not needed for every run
+- ✅ Only for export/visualization
+- ✅ Ideal for presentations/reports
 
 ---
 
-## 📋 2 Προτεινόμενες "Συνταγές"
+## 📋 2 Recommended "Recipes"
 
-### Συνταγή A: Quick Lookup (3 κλήσεις max)
+### Recipe A: Quick Lookup (3 calls max)
 
-**Use case:** Γρήγορη επαλήθευση ύπαρξης ατόμου
+**Use case:** Quick verification of person's existence
 
 ```bash
 # Step 1: Web search
 curl -X POST "http://localhost:8000/search" \
   -H "Content-Type: application/json" \
-  -d '{"name":"Γιώργος Παπαδόπουλος","keywords":["αρχιτέκτονας"],"limit":15}'
+  -d '{"name":"John Doe","keywords":["architect"],"limit":15}'
 
 # Step 2: Social lookup
 curl -X POST "http://localhost:8000/social_lookup" \
   -H "Content-Type: application/json" \
-  -d '{"username":"giorgospapadopoulos"}'
+  -d '{"username":"johndoe"}'
 
-# Step 3: Email verification (μόνο για υποψήφια emails)
+# Step 3: Email verification (only for candidate emails)
 curl -X POST "http://localhost:8000/verify_email" \
   -H "Content-Type: application/json" \
-  -d '{"email":"giorgos.p@example.com"}'
+  -d '{"email":"john.doe@example.com"}'
 ```
 
-**⏱️ Χρόνος:** 30-60 δευτερόλεπτα  
-**💰 Κόστος:** Χαμηλό (χρησιμοποιεί Google μόνο 1 φορά)  
-**🎯 Ideal για:** Initial reconnaissance, quick checks
+**⏱️ Time:** 30-60 seconds  
+**💰 Cost:** Low (uses Google only once)  
+**🎯 Ideal for:** Initial reconnaissance, quick checks
 
 ---
 
-### Συνταγή B: Deep Research + Γρήγορα Επόμενα Runs (Index-First)
+### Recipe B: Deep Research + Fast Follow-up Runs (Index-First)
 
-**Use case:** Βαθιά έρευνα με πολλαπλά queries
+**Use case:** Deep investigation with multiple queries
 
 ```bash
-# Step 1: Αρχική αναζήτηση για URLs
+# Step 1: Initial search for URLs
 curl -X POST "http://localhost:8000/search" \
   -H "Content-Type: application/json" \
-  -d '{"name":"Γιώργος Παπαδόπουλος","keywords":["αρχιτέκτονας"],"limit":50}'
+  -d '{"name":"John Doe","keywords":["architect"],"limit":50}'
 
 # Step 2: Batch ingest (20-200 URLs)
 curl -X POST "http://localhost:8000/ingest_urls" \
@@ -376,7 +376,7 @@ curl -X POST "http://localhost:8000/ingest_urls" \
     "source": "batch_research"
   }'
 
-# Step 3: Πολλαπλές hybrid searches (γρήγορα, χωρίς επιπλέον κόστος)
+# Step 3: Multiple hybrid searches (fast, no additional cost)
 curl -X POST "http://localhost:8000/search_hybrid" \
   -H "Content-Type: application/json" \
   -d '{"query":"architectural projects Athens 2024","k":10}'
@@ -387,33 +387,33 @@ curl -X POST "http://localhost:8000/search_hybrid" \
 
 curl -X POST "http://localhost:8000/search_hybrid" \
   -H "Content-Type: application/json" \
-  -d '{"query":"Giorgos Papadopoulos awards publications","k":10}'
+  -d '{"query":"John Doe awards publications","k":10}'
 
-# Step 4: Export για αναφορά (αν χρειάζεται)
+# Step 4: Export for reporting (if needed)
 curl "http://localhost:8000/export_csv" -o final_report.csv
 ```
 
-**⏱️ Χρόνος:** 5-15 λεπτά για setup, μετά <1 δευτερόλεπτο/query  
-**💰 Κόστος:** Κυρίως στο πρώτο step, μετά σχεδόν μηδενικό  
-**🎯 Ideal για:** Deep investigations, research projects, multiple angles
+**⏱️ Time:** 5-15 minutes for setup, then <1 second/query  
+**💰 Cost:** Mainly in first step, then nearly zero  
+**🎯 Ideal for:** Deep investigations, research projects, multiple angles
 
 ---
 
-## ⚡ Απόδοση & Tips
+## ⚡ Performance & Tips
 
-### Γενικές Οδηγίες
+### General Guidelines
 
-- **Δεν χρειάζονται όλα κάθε φορά** — Συνδύασε `/search` + `/social_lookup` για τα περισσότερα cases
-- **Social lookup δεν "καίει" quotas** — Αλλά τρέχει πολλούς ελέγχους, οπότε χρησιμοποίησε timeouts αν το αυτοματοποιήσεις
-- **Email precision** — Πάντα πέρασε υποψήφια emails από `/verify_email` πριν τα θεωρήσεις valid
+- **Not everything is needed every time** — Combine `/search` + `/social_lookup` for most cases
+- **Social lookup doesn't burn quotas** — But it runs many checks, so use timeouts if automating
+- **Email precision** — Always pass candidate emails through `/verify_email` before considering them valid
 
-### Για Κλιμάκωση/Ταχύτητα
+### For Scaling/Speed
 
-Αν θες να επενδύσεις στο `/ingest_urls` + `/search_hybrid`:
+If you want to invest in `/ingest_urls` + `/search_hybrid`:
 
 **1. Batch Size Optimization:**
 ```bash
-# Optimal: 50-200 URLs ανά batch
+# Optimal: 50-200 URLs per batch
 curl -X POST "http://localhost:8000/ingest_urls" \
   -H "Content-Type: application/json" \
   -d '{"urls":[/* 50-200 URLs */],"source":"batch"}'
@@ -421,49 +421,49 @@ curl -X POST "http://localhost:8000/ingest_urls" \
 
 **2. Embedding Configuration:**
 ```bash
-# Στο orchestrator/.env ή environment:
-EMBED_DIM=384  # Για balance μεταξύ ταχύτητας/ποιότητας
-# EMBED_DIM=768  # Αν έχεις RAM και θέλεις καλύτερη ακρίβεια
+# In orchestrator/.env or environment:
+EMBED_DIM=384  # For balance between speed/quality
+# EMBED_DIM=768  # If you have RAM and want better accuracy
 ```
 
 **3. Docker Resources:**
 ```yaml
-# Στο docker-compose.yml:
+# In docker-compose.yml:
 services:
   orchestrator:
     deploy:
       resources:
         limits:
-          memory: 4G  # Minimum για embeddings
+          memory: 4G  # Minimum for embeddings
   opensearch:
     deploy:
       resources:
         limits:
-          memory: 2G  # Για k-NN vectors
+          memory: 2G  # For k-NN vectors
 ```
 
-**Συνολικό recommended RAM:** 4-6GB για όλο το stack
+**Total recommended RAM:** 4-6GB for the entire stack
 
 ### Quota Control
 
-**Caching για Google CSE** (μείωση API calls):
+**Caching for Google CSE** (reduce API calls):
 ```bash
-# Το Redis είναι ήδη στο stack - enable caching:
-# Στο orchestrator/main.py, πρόσθεσε TTL 7-30 ημέρες για search results
+# Redis is already in the stack - enable caching:
+# In orchestrator/main.py, add TTL 7-30 days for search results
 ```
 
-**Πλεονεκτήματα:**
-- ✅ Ίδιο query → instant response από cache
-- ✅ Μείωση Google CSE quota usage κατά ~60-80%
+**Benefits:**
+- ✅ Same query → instant response from cache
+- ✅ Reduce Google CSE quota usage by ~60-80%
 - ✅ Faster response times
 
 ---
 
-## 🛠️ Επεκτάσεις & Customization
+## 🛠️ Extensions & Customization
 
-Αυτό το stack είναι ένα **starter template**. Μπορείς να το επεκτείνεις με:
+This stack is a **starter template**. You can extend it with:
 
-### Προτεινόμενα Additional Tools
+### Recommended Additional Tools
 
 - **[Sherlock](https://github.com/sherlock-project/sherlock)** — Username search across 400+ social networks
 - **[Maigret](https://github.com/soxoj/maigret)** — Collect info about person by username
@@ -474,17 +474,17 @@ services:
 
 ### Customization Tips
 
-- Πρόσθεσε δικούς σου connectors στο `orchestrator/` directory
-- Τροποποίησε τα profession filters στο `profession_filter.py`
-- Customize τα embedding models στο `scrape_embed.py`
-- Ρύθμισε το OpenSearch schema για τις ανάγκες σου
+- Add your own connectors to the `orchestrator/` directory
+- Modify profession filters in `profession_filter.py`
+- Customize embedding models in `scrape_embed.py`
+- Configure OpenSearch schema for your needs
 
 ---
 
 ## 📝 License
 
-Open-source project. Χρησιμοποίησε υπεύθυνα και σύμφωνα με τους νόμους της χώρας σου.
+Open-source project. Use responsibly and in accordance with your country's laws.
 
 ## ⚠️ Disclaimer
 
-Αυτό το εργαλείο είναι για **νόμιμη OSINT έρευνα** και **εκπαιδευτικούς σκοπούς**. Ο χρήστης είναι υπεύθυνος για τη νόμιμη χρήση του λογισμικού.
+This tool is for **legal OSINT research** and **educational purposes**. The user is responsible for the lawful use of this software.
