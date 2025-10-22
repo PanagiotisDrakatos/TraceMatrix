@@ -255,5 +255,3 @@ models/
 !.env.example
 !docker-compose.yml
 !README.md
-.env
-.env
