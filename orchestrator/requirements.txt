@@ -1,0 +1,15 @@
+
+fastapi
+uvicorn[standard]
+requests
+python-dotenv
+trafilatura
+sentence-transformers
+transformers
+rapidfuzz
+redis
+httpx
+pydantic
+opensearch-py
+numpy
+pandas
