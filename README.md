@@ -166,19 +166,20 @@ The `/orchestrate` endpoint is the most powerful feature, combining all services
 **Example:**
 
 ```bash
-curl -X POST "http://localhost:8000/orchestrate" \
+curl -sS -X POST "http://localhost:8000/orchestrate" \
   -H "Content-Type: application/json" \
   -d '{
-    "name": "John Doe",
-    "keywords": ["athens", "security"],
+    "name": "Panagiotis Drakatos",
+    "keywords": ["athens","software engineer","keyword-only orchestration"],
     "search_limit": 15,
     "social_limit": 10,
     "email_limit": 20,
     "phone_limit": 5,
     "hybrid_k": 20,
     "ingest_limit": 60,
-    "export_limit": 2000
-  }'
+    "export_limit": 2000,
+    "fallback": true
+  }' | jq .
 ```
 
 **With phone number:**

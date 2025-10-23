@@ -21,10 +21,19 @@ services:
       # containers μιλάνε μεταξύ τους μέσω service DNS + internal port
       - SEARXNG_BASE_URL=http://searxng:8080
       - SEARXNG_URL=http://searxng:8080
-    profiles: ["dev"]
     volumes:
       - ./exports:/app/exports
       - ./:/app
+    # simple healthcheck so you ξέρεις ότι ακούει στο 8000
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "python - <<'PY'\nimport urllib.request,sys; \ntry:\n  r=urllib.request.urlopen('http://127.0.0.1:8000/docs', timeout=3)\n  sys.exit(0 if r.status<400 else 1)\nexcept Exception:\n  sys.exit(1)\nPY"
+        ]
+      interval: 10s
+      retries: 15
+      start_period: 20s
     depends_on:
       opensearch:
         condition: service_healthy
@@ -51,7 +60,7 @@ services:
       # image-specific secret key setting remains for SearXNG
       - SearXNG__system__secret_key=${SEARXNG_SECRET_KEY}
     healthcheck:
-      test: ["CMD-SHELL", "python3 -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8080').status < 400 else 1)\""]
+      test: [ "CMD-SHELL", "python3 -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8080').status < 400 else 1)\"" ]
       interval: 20s
       timeout: 5s
       retries: 10
@@ -203,7 +212,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_started
-    profiles: ["tests"]
+    profiles:
+      - tests
     networks:
       - osint
 

@@ -8,3 +8,7 @@ docker compose run --rm orchestrator bash -c "pip install -U pytest pytest-async
 
 docker compose up
 
+
+curl -sS -OJ http://localhost:8000/export_csv
+
+

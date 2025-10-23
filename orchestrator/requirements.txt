@@ -6,6 +6,7 @@ pydantic>=2.6
 email-validator>=2.1.0
 opensearch-py>=2.5
 tenacity>=8.5
+pyyaml>=6.0.2
 
 # ingest/file_meta deps
 Pillow>=10.3
