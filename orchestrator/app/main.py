@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException
+from contextlib import asynccontextmanager
 from typing import List, Dict, Any
 import os, asyncio
 import httpx
@@ -8,13 +9,40 @@ from .services.file_meta import extract_metadata_from_url
 from .services.aggregation import dedup, apply_rrf
 from .connectors.google_cse import search_google_cse, google_available
 from .connectors.searxng import search_searxng
-from .utils.export_csv import export_entities
+from .utils.export_csv import export_entities, row_url, row_image
+# NEW: holehe/maigret services and OpenSearch indices init
+from pydantic import BaseModel, Field, EmailStr
+from .services.maigret_service import maigret_lookup
+from .services.holehe_service import holehe_lookup_and_index
+
+# Βεβαιώσου ότι υπάρχει startup hook για indices (αν δεν υπάρχει ήδη στο αρχείο σου):
+try:
+    from .services.opensearch_client import ensure_indices
+except Exception:
+    ensure_indices = None  # type: ignore
 
 try:
     app  # type: ignore[name-defined]
 except NameError:
-    app = FastAPI(title="TraceMatrix Orchestrator")
+    pass
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
+    if ensure_indices is not None:
+        await ensure_indices()
+    yield
+    # Shutdown (nothing for now)
+
+app = FastAPI(title="TraceMatrix Orchestrator", lifespan=lifespan)
 _ner = NER()
+
+# ------------ Schemas ------------
+class EmailPayload(BaseModel):
+    email: EmailStr = Field(..., description="Target email address")
+
+class UsernamePayload(BaseModel):
+    username: str = Field(..., min_length=2, description="Target username/alias")
 
 @app.get("/")
 def read_root():  # keep existing root
@@ -85,6 +113,24 @@ async def search_stub(payload: Dict[str, Any]) -> Dict[str, Any]:
     fused.sort(key=lambda x: x["rrf"], reverse=True)
     return {"count": len(fused), "results": fused[:limit]}
 
+# NEW: Holehe endpoint
+@app.post("/email_accounts")
+async def email_accounts(payload: EmailPayload) -> Dict[str, Any]:
+    try:
+        hits = await holehe_lookup_and_index(payload.email)
+        return {"email": payload.email, "hits": hits}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# NEW: Maigret endpoint
+@app.post("/maigret_lookup")
+async def maigret_lookup_route(payload: UsernamePayload) -> Dict[str, Any]:
+    try:
+        hits = await maigret_lookup(payload.username)
+        return {"username": payload.username, "hits": hits}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.post("/ingest_urls")
 async def ingest_urls(req: IngestRequest):
     if not req.urls: raise HTTPException(400, "Provide urls[]")
@@ -112,9 +158,44 @@ async def orchestrate(req: OrchestrateRequest):
     phones_considered = [req.phone] if req.phone else phones_found[: req.phone_limit]
     ing = await ingest_urls(IngestRequest(urls=urls, source="web", text=" ".join([r.get("snippet","") for r in s["results"]])))
     hyb = await search_hybrid(HybridSearchRequest(query=f"{req.name} {' '.join(req.keywords)}", k=req.hybrid_k))
-    rows = [{"type":"url","value": r["url"], "title": r.get("title",""), "url": r["url"], "source": r.get("source","web")} for r in s["results"]]
-    rows += [{"type":"phone","value": p, "title":"", "url":"", "source":"discovered"} for p in phones_considered]
+
+    # Step 5: export CSV for Maltego (URLs + images/docs with metadata)
+    rows: List[Dict[str, Any]] = []
+    # 5a) URLs από search results
+    for r in s["results"]:
+        rows.append(row_url(r["url"], title=r.get("title",""), source=r.get("source","web")))
+    # 5b) Τηλέφωνα (σαν απλές οντότητες – μένουν ως URL rows ή μπορείς να τα περάσεις ως custom entity σε επόμενο βήμα)
+    for p in phones_considered:
+        rows.append({ "type":"maltego.Phrase", "value": p, "title": "phone", "url": "", "source": "discovered",
+                      "mime":"", "sha256":"", "exif_gps_lat":"", "exif_gps_lon":"" })
+    # 5c) Από το ingest: file_meta για images/PDF/DOCX
+    #    ing["file_meta"] είναι λίστα π.χ. {"type":"image"|"pdf"|"docx"|"unknown","meta":{...},"sha256":"...","url":"..."}
+    for fm in (ing.get("file_meta") or []):
+        ftype = (fm.get("type") or "").lower()
+        furl  = fm.get("url") or ""
+        sha   = fm.get("sha256") or ""
+        if not furl:
+            continue
+        if ftype == "image":
+            mime = "image/jpeg"  # default, δεν βλάπτει αν είναι png (μπορείς να ανιχνεύσεις από το url)
+            # Προαιρετική εξαγωγή GPS από EXIF
+            gps_lat = ""
+            gps_lon = ""
+            gps = (fm.get("meta") or {}).get("GPSInfo") or {}
+            # Τα EXIF μπορεί να είναι strings – γράφουμε ό,τι υπάρχει raw
+            gps_lat = str(gps.get("GPSLatitude","")) if isinstance(gps, dict) else ""
+            gps_lon = str(gps.get("GPSLongitude","")) if isinstance(gps, dict) else ""
+            rows.append(row_image(furl, title="", source="web", mime=mime, sha256=sha,
+                                exif_gps_lat=gps_lat, exif_gps_lon=gps_lon))
+        elif ftype in ("pdf","docx"):
+            mime = "application/pdf" if ftype == "pdf" else "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            rows.append(row_url(furl, title="", source="web", mime=mime, sha256=sha))
+        else:
+            # Άγνωστο binary ⇒ ως URL
+            rows.append(row_url(furl, title="", source="web", mime="", sha256=sha))
+
     csv_path = export_entities(rows[: req.export_limit])
+
     return {"query": f"{req.name} {' '.join(req.keywords)}","counts":{"initial_urls":len(urls),"emails_found":0,"usernames_found":0,"phones_found":len(phones_found)},
             "samples":{"emails":[], "usernames":[], "novel_urls":[]},
             "phones_found": phones_found, "phones_considered": phones_considered,

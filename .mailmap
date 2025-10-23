@@ -1,5 +1,10 @@
 set GITHUB_COPILOT_COMMAND_TIMEOUT_SECONDS=1
 set GITHUB_COPILOT_CONTEXT_MODE=incremental
+docker system prune -a --volumes -f
+docker compose down -v
+docker compose pull
+docker compose build
+docker compose up
 docker compose run --rm orchestrator bash -c "pip install -U pytest pytest-asyncio respx && pytest -q"
 
 

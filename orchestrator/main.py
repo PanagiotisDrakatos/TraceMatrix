@@ -5,7 +5,7 @@ import asyncio
 from urllib.parse import urlparse
 
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, EmailStr
 import httpx
 
 # Χρήση libphonenumber για πιο αξιόπιστη αναγνώριση
@@ -23,8 +23,20 @@ from profession_filter import matches_profession
 from providers_min import google_search, verify_email_reacher
 from scrape_embed import fetch_and_embed, get_model
 from harvester_connector import run_theharvester
+# NEW services
+from app.services.holehe_service import holehe_lookup_and_index
+from app.services.maigret_service import maigret_lookup
+from app.services.opensearch_client import ensure_indices
 
 app = FastAPI(title="OSINT Orchestrator (OSS)")
+
+# Ensure OpenSearch indices on startup (idempotent)
+@app.on_event("startup")
+async def _startup_indices():
+    try:
+        await ensure_indices()
+    except Exception:
+        pass
 
 # Mount static directory for exported CSVs
 app.mount(
@@ -201,6 +213,33 @@ def social_lookup(req: SocialReq):
     return social_analyzer_username(req.username)
 
 
+# NEW: Email accounts via Holehe
+class EmailAccountsReq(BaseModel):
+    email: EmailStr
+
+
+@app.post("/email_accounts")
+async def email_accounts(req: EmailAccountsReq):
+    try:
+        hits = await holehe_lookup_and_index(req.email)
+        return {"email": req.email, "hits": hits}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# NEW: Maigret lookup endpoint
+class MaigretReq(BaseModel):
+    username: str = Field(..., min_length=2)
+
+
+@app.post("/maigret_lookup")
+async def maigret_lookup_route(req: MaigretReq):
+    try:
+        hits = await maigret_lookup(req.username)
+        return {"username": req.username, "hits": hits}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 class HarvestReq(BaseModel):
     domain: str
@@ -321,15 +360,7 @@ class OrchestrateRequest(BaseModel):
 @app.post("/orchestrate")
 async def orchestrate(req: OrchestrateRequest):
     """
-    Multi-step orchestration endpoint:
-    1. Initial search with name + keywords (+ phone if provided)
-    2. Extract emails, usernames, and phones (if not provided)
-    3. PhoneInfoga lookups (for provided or discovered phones)
-    4. Social lookups for discovered usernames
-    5. Email verification
-    6. Hybrid search with all enriched data
-    7. Ingest novel URLs
-    8. Export CSV for Maltego
+    Multi-step orchestration endpoint + optional Holehe/Maigret steps.
     """
     phone_norm = _norm_phone(req.phone)
     base_app = os.getenv("ORCHESTRATOR_BASE_URL", "http://127.0.0.1:8000")
@@ -360,16 +391,12 @@ async def orchestrate(req: OrchestrateRequest):
         emails_found = list(_extract_emails(texts))[:req.email_limit]
         usernames_found = list(_extract_usernames_from_urls(urls_initial))[:req.social_limit]
 
-        # phones: ΜΟΝΟ αν δεν δόθηκε από το request – τα ανακαλύπτουμε από τα αποτελέσματα
+        # 2) phoneinfoga (optional)
         phones_found: List[str] = []
         if not phone_norm:
-            # ΜΗΝ ψάχνεις σε URLs (εκτός tel:) — εδώ κρατάμε μόνο text
             phones_found = _extract_phones(texts)[:req.phone_limit]
-
-        # τηλέφωνα που θα χρησιμοποιηθούν downstream
         phones_considered = [phone_norm] if phone_norm else phones_found
 
-        # 2) phoneinfoga (optional)
         phoneinfoga = None
         if req.include_phoneinfoga and phones_considered:
             async def pf_lookup(p: str):
@@ -382,12 +409,10 @@ async def orchestrate(req: OrchestrateRequest):
                 return {"phone": p, "error": True}
             phoneinfoga = await asyncio.gather(*[pf_lookup(p) for p in phones_considered])
 
-        SOCIAL_ANALYZER_BASE = os.getenv("SOCIAL_ANALYZER_BASE", "http://social-analyzer:9005")
         # 3) social lookups (parallel)
+        SOCIAL_ANALYZER_BASE = os.getenv("SOCIAL_ANALYZER_BASE", "http://social-analyzer:9005")
         async def social_lookup(u: str):
             try:
-                # proxy μέσω εσωτερικού endpoint αν το θες — διαφορετικά κάλεσε τον connector απευθείας.
-                # εδώ δείχνουμε απευθείας κλήση του social-analyzer με fallback paths.
                 url1 = f"{SOCIAL_ANALYZER_BASE}/api/search"
                 url2 = f"{SOCIAL_ANALYZER_BASE}/search"
                 sr = await client.post(url1, json={"username": u, "limit": req.social_limit})
@@ -409,6 +434,16 @@ async def orchestrate(req: OrchestrateRequest):
             return { "email": e, "error": True }
 
         email_results = await asyncio.gather(*[verify_email(e) for e in emails_found])
+
+        # 4b) Holehe enrichment (optional)
+        holehe_runs = None
+        if os.getenv("ENABLE_HOLEHE_IN_ORCHESTRATE", "false").lower() == "true" and emails_found:
+            holehe_runs = await asyncio.gather(*[holehe_lookup_and_index(e) for e in emails_found])
+
+        # 4c) Maigret cross-validation (optional)
+        maigret_runs = None
+        if os.getenv("ENABLE_MAIGRET_IN_ORCHESTRATE", "false").lower() == "true" and usernames_found:
+            maigret_runs = await asyncio.gather(*[maigret_lookup(u) for u in usernames_found])
 
         # 5) hybrid search
         q = " ".join(filter(None, [
@@ -468,6 +503,8 @@ async def orchestrate(req: OrchestrateRequest):
         "phoneinfoga": phoneinfoga,
         "social": social_results[:req.limit],
         "emails": email_results[:req.limit],
+        "holehe": holehe_runs,
+        "maigret": maigret_runs,
         "ingested": { "ok": ing_ok, "urls": urls_for_ingest },
         "csv_path": csv_path
     }
