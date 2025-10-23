@@ -13,3 +13,9 @@ opensearch-py
 numpy
 pandas
 phonenumbers
+pillow
+pypdf
+celery
+respx
+pytest
+pytest-asyncio
