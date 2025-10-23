@@ -18,6 +18,9 @@ services:
       - OPENSEARCH_USER=admin
       - OPENSEARCH_PASSWORD=${OPENSEARCH_INITIAL_ADMIN_PASSWORD:-admin}
       - PYTHONPATH=/app
+      # containers μιλάνε μεταξύ τους μέσω service DNS + internal port
+      - SEARXNG_BASE_URL=http://searxng:8080
+      - SEARXNG_URL=http://searxng:8080
     profiles: ["dev"]
     volumes:
       - ./exports:/app/exports
@@ -28,21 +31,31 @@ services:
       searxng:
         condition: service_healthy
       redis:
-        condition: service_healthy
+        condition: service_started
     networks:
       - osint
 
   searxng:
     image: searxng/searxng:latest
+    container_name: osint-searxng
     ports:
       - "8081:8080"
+    restart: unless-stopped
     environment:
+      # Βεβαιώσου ότι δεσμεύει την εσωτερική 8080
+      - BIND_ADDRESS=0.0.0.0:8080
+      # (προτείνεται) βάλε πραγματικό secret στο .env => SEARXNG_SECRET_KEY=...
+      - SEARXNG_SECRET_KEY=${SEARXNG_SECRET_KEY}
+      # optional – βοηθά σε links/redirects
+      - SEARXNG_BASE_URL=http://localhost:8081/
+      # image-specific secret key setting remains for SearXNG
       - SearXNG__system__secret_key=${SEARXNG_SECRET_KEY}
     healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:8080/healthz || exit 1"]
-      interval: 10s
+      test: ["CMD-SHELL", "python3 -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8080').status < 400 else 1)\""]
+      interval: 20s
       timeout: 5s
-      retries: 30
+      retries: 10
+      start_period: 60s
     networks:
       - osint
 
@@ -177,6 +190,8 @@ services:
       - OSINT_INDEX=${OSINT_INDEX}
       - EMBED_DIM=${EMBED_DIM}
       - PYTHONPATH=/app
+      - SEARXNG_BASE_URL=http://searxng:8080
+      - SEARXNG_URL=http://searxng:8080
     volumes:
       - ./exports:/app/exports
       - ./tests:/app/tests
@@ -187,7 +202,7 @@ services:
       searxng:
         condition: service_healthy
       redis:
-        condition: service_healthy
+        condition: service_started
     profiles: ["tests"]
     networks:
       - osint
