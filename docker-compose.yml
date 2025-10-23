@@ -1,6 +1,7 @@
 services:
   orchestrator:
     build: ./orchestrator
+    working_dir: /app
     ports:
       - "8000:8000"
     environment:
@@ -12,14 +13,24 @@ services:
       - REDIS_URL=${REDIS_URL}
       - OSINT_INDEX=${OSINT_INDEX}
       - EMBED_DIM=${EMBED_DIM}
+      - OPENSEARCH_HOST=opensearch
+      - OPENSEARCH_PORT=9200
+      - OPENSEARCH_USER=admin
+      - OPENSEARCH_PASSWORD=${OPENSEARCH_INITIAL_ADMIN_PASSWORD:-admin}
+      - PYTHONPATH=/app
+    profiles: ["dev"]
     volumes:
       - ./exports:/app/exports
+      - ./:/app
     depends_on:
-      - searxng
-      - opensearch
-      - redis
-      - reacher
-      - social-analyzer
+      opensearch:
+        condition: service_healthy
+      searxng:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - osint
 
   searxng:
     image: searxng/searxng:latest
@@ -27,69 +38,131 @@ services:
       - "8081:8080"
     environment:
       - SearXNG__system__secret_key=${SEARXNG_SECRET_KEY}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/healthz || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+    networks:
+      - osint
 
   opensearch:
     image: opensearchproject/opensearch:2
     environment:
-        - discovery.type=single-node
-        - OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m
-        - OPENSEARCH_INITIAL_ADMIN_PASSWORD=${OPENSEARCH_INITIAL_ADMIN_PASSWORD}
-        - plugins.security.disabled=true
+      - discovery.type=single-node
+      - OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m
+      - bootstrap.memory_lock=true
+      # 🔴 Κλειστό το security εντελώς:
+      - DISABLE_INSTALL_DEMO_CONFIG=true
+      - DISABLE_SECURITY_PLUGIN=true
+      # (ΑΝ προτιμάς με security, αφαίρεσε τις 2 παραπάνω και βάλε
+      # OPENSEARCH_INITIAL_ADMIN_PASSWORD=MyStrongPassw0rd! )
     ulimits:
+      memlock:
+        soft: -1
+        hard: -1
       nproc: 65535
       nofile:
         soft: 65535
         hard: 65535
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -sf http://localhost:9200 >/dev/null || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 30
     ports:
       - "9200:9200"
+    networks:
+      - osint
+
 
   opensearch-dashboards:
     image: opensearchproject/opensearch-dashboards:2
     environment:
       - OPENSEARCH_HOSTS=["http://opensearch:9200"]
+      - DISABLE_SECURITY_DASHBOARDS_PLUGIN=true
+    depends_on:
+      opensearch:
+        condition: service_healthy
     ports:
       - "5601:5601"
+    networks:
+      - osint
 
   redis:
     image: redis:7
     ports:
       - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+    networks:
+      - osint
+
+  # Προαιρετικά / βαριά services στο profile "extras"
+  social-analyzer:
+    image: bukshee/social-analyzer:latest
+    environment:
+      - PORT=9005
+      - NODE_ENV=production
+      - NODE_OPTIONS=--max-old-space-size=256
+    ports:
+      - "9005:9005"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:9005 >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+    profiles: ["extras"]
+    networks:
+      - osint
 
   reacher:
     image: reacherhq/backend:latest
-    ports:
-      - "8082:8080"
     environment:
       - LOG_LEVEL=info
-
-  social-analyzer:
-    image: bukshee/social-analyzer:latest
-    # HTTP only (no SSL). Expose GUI via port 9005.
     ports:
-        - "9005:9005"
-    environment:
-      - PORT=9005
-    restart: unless-stopped
+      - "8082:8080"
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+    profiles: ["extras"]
+    networks:
+      - osint
 
   theharvester:
     image: ghcr.io/laramies/theharvester:latest
-    entrypoint: [ "/bin/sh", "-c", "tail -f /dev/null" ]
+    entrypoint: ["/bin/sh", "-c", "tail -f /dev/null"]
     tty: true
     stdin_open: true
     volumes:
       - ./data/harvester_results:/results
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+    profiles: ["extras"]
+    networks:
+      - osint
 
   phoneinfoga:
     image: sundowndev/phoneinfoga:latest
-    ports:
-        - "8083:8080"
     command: "serve -p 8080"
+    ports:
+      - "8083:8080"
+    networks:
+      - osint
 
   # ------------------------
   # 🧪 TEST SERVICE
   # ------------------------
   orchestrator-tests:
     build: ./orchestrator
+    working_dir: /app
     command: >
       bash -c "
         pip install -U pytest pytest-asyncio respx &&
@@ -103,14 +176,21 @@ services:
       - REDIS_URL=${REDIS_URL}
       - OSINT_INDEX=${OSINT_INDEX}
       - EMBED_DIM=${EMBED_DIM}
+      - PYTHONPATH=/app
     volumes:
       - ./exports:/app/exports
-      - ./tests:/app/tests       # mount local tests
+      - ./tests:/app/tests
       - ./orchestrator:/app/orchestrator
     depends_on:
-      - searxng
-      - opensearch
-      - redis
-      - reacher
-      - social-analyzer
-    profiles: [ "tests" ]
+      opensearch:
+        condition: service_healthy
+      searxng:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    profiles: ["tests"]
+    networks:
+      - osint
+
+networks:
+  osint:

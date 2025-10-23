@@ -32,7 +32,7 @@ A fully **open-source** OSINT (Open Source Intelligence) stack that combines mod
 ✅ Hybrid search (BM25 + vector embeddings)  
 ✅ Email verification  
 ✅ Social media username enumeration  
-✅ CSV export for Maltego CE integration  
+✅ CSV export for Maltego CE integration (now includes **images & documents** metadata)  
 ✅ 100% open-source stack
 
 ---
@@ -73,6 +73,8 @@ GOOGLE_CSE_CX=your_google_cse_cx_here
 
 # SearXNG Secret (change to a random string)
 SEARXNG_SECRET_KEY=change_this_to_a_random_string
+# SearXNG Base URL (used by Orchestrator when calling the JSON API)
+SEARXNG_BASE_URL=http://searxng:8080
 
 # OpenSearch Password (change to a strong password)
 OPENSEARCH_INITIAL_ADMIN_PASSWORD=change_this_to_a_strong_password
@@ -124,6 +126,24 @@ Wait until all services are up (~2-3 minutes for the first time).
 | `/export_csv` | GET | Export data in CSV format for Maltego |
 
 For **full documentation** and **interactive testing**, open Swagger UI: http://localhost:8000/docs
+
+---
+
+## 🧪 Testing (Docker)
+
+You can run tests inside the same image the Orchestrator uses:
+
+```bash
+# ephemeral test run
+docker compose run --rm orchestrator bash -c "pip install -U pytest pytest-asyncio respx && pytest -q"
+```
+
+Or define a dedicated test service (optional) and run:
+```bash
+docker compose run --rm orchestrator-tests
+# or
+docker compose --profile tests up --build orchestrator-tests
+```
 
 ---
 
