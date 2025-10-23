@@ -84,3 +84,33 @@ services:
     ports:
         - "8083:8080"
     command: "serve -p 8080"
+
+  # ------------------------
+  # 🧪 TEST SERVICE
+  # ------------------------
+  orchestrator-tests:
+    build: ./orchestrator
+    command: >
+      bash -c "
+        pip install -U pytest pytest-asyncio respx &&
+        pytest -q"
+    environment:
+      - GOOGLE_CSE_API_KEY=${GOOGLE_CSE_API_KEY}
+      - GOOGLE_CSE_CX=${GOOGLE_CSE_CX}
+      - REACHER_BASE_URL=${REACHER_BASE_URL}
+      - SEARX_BASE=${SEARX_BASE}
+      - OPENSEARCH_URL=${OPENSEARCH_URL}
+      - REDIS_URL=${REDIS_URL}
+      - OSINT_INDEX=${OSINT_INDEX}
+      - EMBED_DIM=${EMBED_DIM}
+    volumes:
+      - ./exports:/app/exports
+      - ./tests:/app/tests       # mount local tests
+      - ./orchestrator:/app/orchestrator
+    depends_on:
+      - searxng
+      - opensearch
+      - redis
+      - reacher
+      - social-analyzer
+    profiles: [ "tests" ]
