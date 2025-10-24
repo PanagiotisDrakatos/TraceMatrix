@@ -1,38 +1,44 @@
+version: "3.9"
+
 services:
   orchestrator:
     build: ./orchestrator
+    container_name: osint-orchestrator
     working_dir: /app
     ports:
       - "8000:8000"
     environment:
+      # --- External APIs / optional ---
       - GOOGLE_CSE_API_KEY=${GOOGLE_CSE_API_KEY}
       - GOOGLE_CSE_CX=${GOOGLE_CSE_CX}
       - REACHER_BASE_URL=${REACHER_BASE_URL}
-      - SEARX_BASE=${SEARX_BASE}
-      - OPENSEARCH_URL=${OPENSEARCH_URL}
-      - REDIS_URL=${REDIS_URL}
-      - OSINT_INDEX=${OSINT_INDEX}
-      - EMBED_DIM=${EMBED_DIM}
+      # --- Internal service URLs (containers μιλάνε μεταξύ τους με DNS service name + internal port) ---
+      - SEARXNG_BASE_URL=http://searxng:8080
+      - SEARXNG_URL=http://searxng:8080
+      - OPENSEARCH_URL=http://opensearch:9200
+      - REDIS_URL=redis://redis:6379/0
+      # --- OpenSearch config ---
       - OPENSEARCH_HOST=opensearch
       - OPENSEARCH_PORT=9200
       - OPENSEARCH_USER=admin
       - OPENSEARCH_PASSWORD=${OPENSEARCH_INITIAL_ADMIN_PASSWORD:-admin}
+      - OSINT_INDEX=${OSINT_INDEX:-osint_docs}
+      - EMBED_DIM=${EMBED_DIM:-384}
+      # --- Python path ---
       - PYTHONPATH=/app
-      # containers μιλάνε μεταξύ τους μέσω service DNS + internal port
-      - SEARXNG_BASE_URL=http://searxng:8080
-      - SEARXNG_URL=http://searxng:8080
     volumes:
       - ./exports:/app/exports
       - ./:/app
-    # simple healthcheck so you ξέρεις ότι ακούει στο 8000
     healthcheck:
+      # απλό check ότι το FastAPI είναι επάνω
       test:
         [
           "CMD-SHELL",
-          "python - <<'PY'\nimport urllib.request,sys; \ntry:\n  r=urllib.request.urlopen('http://127.0.0.1:8000/docs', timeout=3)\n  sys.exit(0 if r.status<400 else 1)\nexcept Exception:\n  sys.exit(1)\nPY"
+          "python - <<'PY'\nimport urllib.request,sys; \ntry:\n  r=urllib.request.urlopen('http://127.0.0.1:8000/docs', timeout=5)\n  sys.exit(0 if r.status<400 else 1)\nexcept Exception:\n  sys.exit(1)\nPY"
         ]
       interval: 10s
       retries: 15
+      timeout: 5s
       start_period: 20s
     depends_on:
       opensearch:
@@ -48,37 +54,37 @@ services:
     image: searxng/searxng:latest
     container_name: osint-searxng
     ports:
-      - "8081:8080"
+      - "8081:8080"  # host:container
     restart: unless-stopped
     environment:
-      # Βεβαιώσου ότι δεσμεύει την εσωτερική 8080
+      # Δέσμευση της εσωτερικής 8080
       - BIND_ADDRESS=0.0.0.0:8080
-      # (προτείνεται) βάλε πραγματικό secret στο .env => SEARXNG_SECRET_KEY=...
-      - SEARXNG_SECRET_KEY=${SEARXNG_SECRET_KEY}
-      # optional – βοηθά σε links/redirects
+      # ✅ ΣΩΣΤΟ secret env για το official image (βάλε δυνατό string στο .env)
+      - SEARXNG_SECRET=${SEARXNG_SECRET:-change_me_please}
+      # Optional – για links/redirects από browser (host)
       - SEARXNG_BASE_URL=http://localhost:8081/
-      # image-specific secret key setting remains for SearXNG
-      - SearXNG__system__secret_key=${SEARXNG_SECRET_KEY}
     healthcheck:
-      test: [ "CMD-SHELL", "python3 -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8080').status < 400 else 1)\"" ]
+      # Χτυπά το πραγματικό search endpoint ώστε να πάρουμε 200 deterministically
+      test: ["CMD-SHELL", "curl -sf 'http://127.0.0.1:8080/search?q=ping&format=json' >/dev/null || exit 1"]
       interval: 20s
       timeout: 5s
-      retries: 10
-      start_period: 60s
+      retries: 15
+      start_period: 90s
     networks:
       - osint
 
   opensearch:
     image: opensearchproject/opensearch:2
+    container_name: osint-opensearch-1
     environment:
       - discovery.type=single-node
       - OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m
       - bootstrap.memory_lock=true
-      # 🔴 Κλειστό το security εντελώς:
+      # 🔴 Απενεργοποίηση security για απλότητα τοπικά
       - DISABLE_INSTALL_DEMO_CONFIG=true
       - DISABLE_SECURITY_PLUGIN=true
-      # (ΑΝ προτιμάς με security, αφαίρεσε τις 2 παραπάνω και βάλε
-      # OPENSEARCH_INITIAL_ADMIN_PASSWORD=MyStrongPassw0rd! )
+      # Εναλλακτικά, για enabled security:
+      # - OPENSEARCH_INITIAL_ADMIN_PASSWORD=MyStrongPassw0rd!
     ulimits:
       memlock:
         soft: -1
@@ -92,14 +98,15 @@ services:
       interval: 10s
       timeout: 5s
       retries: 30
+      start_period: 15s
     ports:
       - "9200:9200"
     networks:
       - osint
 
-
   opensearch-dashboards:
     image: opensearchproject/opensearch-dashboards:2
+    container_name: osint-opensearch-dashboards
     environment:
       - OPENSEARCH_HOSTS=["http://opensearch:9200"]
       - DISABLE_SECURITY_DASHBOARDS_PLUGIN=true
@@ -113,6 +120,7 @@ services:
 
   redis:
     image: redis:7
+    container_name: osint-redis-1
     ports:
       - "6379:6379"
     healthcheck:
@@ -123,9 +131,12 @@ services:
     networks:
       - osint
 
-  # Προαιρετικά / βαριά services στο profile "extras"
+  # ------------------------
+  # Προαιρετικά / βαριά services (enable με: `--profile extras`)
+  # ------------------------
   social-analyzer:
     image: bukshee/social-analyzer:latest
+    container_name: osint-social-analyzer-1
     environment:
       - PORT=9005
       - NODE_ENV=production
@@ -144,6 +155,7 @@ services:
 
   reacher:
     image: reacherhq/backend:latest
+    container_name: osint-reacher-1
     environment:
       - LOG_LEVEL=info
     ports:
@@ -158,6 +170,7 @@ services:
 
   theharvester:
     image: ghcr.io/laramies/theharvester:latest
+    container_name: osint-theharvester-1
     entrypoint: ["/bin/sh", "-c", "tail -f /dev/null"]
     tty: true
     stdin_open: true
@@ -173,6 +186,7 @@ services:
 
   phoneinfoga:
     image: sundowndev/phoneinfoga:latest
+    container_name: osint-phoneinfoga-1
     command: "serve -p 8080"
     ports:
       - "8083:8080"
@@ -180,27 +194,28 @@ services:
       - osint
 
   # ------------------------
-  # 🧪 TEST SERVICE
+  # 🧪 Test runner (enable με: `--profile tests`)
   # ------------------------
   orchestrator-tests:
     build: ./orchestrator
+    container_name: osint-orchestrator-tests
     working_dir: /app
     command: >
       bash -c "
         pip install -U pytest pytest-asyncio respx &&
-        pytest -q"
+        pytest -q -vv"
     environment:
-      - GOOGLE_CSE_API_KEY=${GOOGLE_CSE_API_KEY}
-      - GOOGLE_CSE_CX=${GOOGLE_CSE_CX}
-      - REACHER_BASE_URL=${REACHER_BASE_URL}
-      - SEARX_BASE=${SEARX_BASE}
-      - OPENSEARCH_URL=${OPENSEARCH_URL}
-      - REDIS_URL=${REDIS_URL}
-      - OSINT_INDEX=${OSINT_INDEX}
-      - EMBED_DIM=${EMBED_DIM}
       - PYTHONPATH=/app
       - SEARXNG_BASE_URL=http://searxng:8080
       - SEARXNG_URL=http://searxng:8080
+      - OPENSEARCH_URL=http://opensearch:9200
+      - REDIS_URL=redis://redis:6379/0
+      - OSINT_INDEX=${OSINT_INDEX:-osint_docs}
+      - EMBED_DIM=${EMBED_DIM:-384}
+      # optional externals (αν τα χρησιμοποιείς στα tests)
+      - GOOGLE_CSE_API_KEY=${GOOGLE_CSE_API_KEY}
+      - GOOGLE_CSE_CX=${GOOGLE_CSE_CX}
+      - REACHER_BASE_URL=${REACHER_BASE_URL}
     volumes:
       - ./exports:/app/exports
       - ./tests:/app/tests
@@ -219,3 +234,4 @@ services:
 
 networks:
   osint:
+    driver: bridge

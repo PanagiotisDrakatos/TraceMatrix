@@ -25,10 +25,18 @@ async def orchestrate(payload: Dict[str, Any] = Body(...)):
     # Forced fallback when no URLs provided and fallback requested
     if do_fallback and len(urls) == 0:
         meta, results = await fallback_orchestrate(cfg, payload)
+        if not results:
+            return {
+                "status": "ok",
+                "mode": "fallback_websearch_empty",
+                "message": "Web search returned 0 URLs; empty index → cannot hybrid",
+                "exports": {},
+                "results_preview": [],
+            }
         return {
             "status": "ok",
             "mode": "fallback_hybrid",
-            "message": "Forced fallback (no URLs). Hybrid + media ➜ export",
+            "message": "Fallback: web search → ingest → hybrid + media ➜ export",
             "exports": meta,
             "results_preview": results[:5],
         }
