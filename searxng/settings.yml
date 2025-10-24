@@ -1,4 +1,4 @@
-use_default_settings: true
+use_default_settings: false
 
 general:
   debug: false
@@ -9,81 +9,44 @@ general:
 server:
   port: 8080
   bind_address: "0.0.0.0"
-  limiter: false
-  methods: [GET, POST]
   base_url: "http://localhost:8081/"
-  secret_key: "tHS7TsCgLLc3OtXpt/cJVzfzuqstPfHiRQhAukpNM5R0cI8jxB0VNW7n2UcwmAlB"
+  limiter: false
+  public_instance: false
+  method: "GET"
 
 ui:
   query_in_title: false
   default_locale: en
   default_theme: simple
-  categories_as_tabs:
-    general: "General"
-    images: "Images"
-    videos: "Videos"
-    news: "News"
-    map: "Map"
-    it: "IT"
-    science: "Science"
-    files: "Files"
-    music: "Music"
-    social media: "Social"
-    shopping: "Shopping"
 
 outgoing:
   request_timeout: 6.0
   useragent_suffix: "osint-searx"
   enable_http2: true
+  pool_connections: 100
+  pool_maxsize: 20
 
 search:
   safe_search: 0
-  autocomplete: ""  # off
+  autocomplete: ""
   default_lang: "en"
   ban_time_on_fail: 10
+  formats: [html, json]
 
 engines:
-  # --- General ---
-  - name: duckduckgo
-    engine: duckduckgo
-    shortcut: ddg
-    categories: [general]
-    disabled: false
-  - name: qwant
-    engine: qwant
-    shortcut: qw
-    categories: [general]
-    disabled: false
-  - name: wikibooks
-    engine: wikibooks
-    categories: [general]
-    disabled: true
-
-  # --- Images ---
-  - name: duckduckgo images
-    engine: duckduckgo_images
-    shortcut: ddi
-    categories: [images]
-    disabled: false
-  - name: wikimedia
-    engine: wikimedia
-    categories: [images]
-    disabled: false
-  - name: flickr_noapi
-    engine: flickr_noapi
-    categories: [images]
-    disabled: true
-
-  # --- Files / PDFs ---
-  - name: general file search
-    engine: google
-    categories: [files]
-    disabled: true  # needs key/cx
-  - name: ygg
-    engine: ygg
-    categories: [files]
-    disabled: true
-
-locales:
-  en:
-    spelling: false
+  - { name: duckduckgo, engine: duckduckgo, shortcut: ddg, categories: [general], disabled: false }
+  - { name: mojeek, engine: mojeek, shortcut: mjk, categories: [general], disabled: false }
+  - { name: wikipedia, engine: wikipedia, shortcut: wp, categories: [general], disabled: false }
+  - { name: reuters, engine: reuters, shortcut: reu, categories: [news], disabled: false }
+  - { name: stackexchange, engine: stackexchange, shortcut: sx, categories: [it], disabled: false }
+  - { name: github, engine: github, shortcut: gh, categories: [it], disabled: false }
+  - { name: openverse, engine: openverse, shortcut: ov, categories: [images], disabled: false }
+  - { name: svgrepo, engine: svgrepo, shortcut: svg, categories: [images], disabled: false }
+  - { name: wikicommons, engine: wikicommons, shortcut: wkc, categories: [images], wc_search_type: image, disabled: false }
+  - { name: vimeo, engine: vimeo, categories: [videos], disabled: false }
+  - { name: dailymotion, engine: dailymotion, categories: [videos], disabled: false }
+  - { name: openstreetmap, engine: openstreetmap, shortcut: osm, categories: [map], disabled: false }
+  - { name: photon, engine: photon, shortcut: pht, categories: [map], disabled: false }
+  - { name: openmeteo, engine: open_meteo, categories: [science], disabled: false }
+  - { name: wttr, engine: wttr, categories: [science], disabled: false }
+  - { name: reddit, engine: reddit, shortcut: re, categories: [social media], disabled: true }
