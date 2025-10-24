@@ -32,13 +32,20 @@ async def orchestrate(payload: Dict[str, Any] = Body(...)):
                 "message": "Web search returned 0 URLs; empty index → cannot hybrid",
                 "exports": {},
                 "results_preview": [],
+                # E2E compatibility
+                "summary": {"results": 0},
+                "export": {"csv_rows": 0, "paths": {}},
             }
+        csv_rows = len(results)
         return {
             "status": "ok",
             "mode": "fallback_hybrid",
             "message": "Fallback: web search → ingest → hybrid + media ➜ export",
             "exports": meta,
             "results_preview": results[:5],
+            # E2E compatibility
+            "summary": {"results": csv_rows},
+            "export": {"csv_rows": csv_rows, "paths": meta},
         }
 
     # else: existing/standard path with URLs crawl ➜ ingest ➜ export
@@ -46,6 +53,9 @@ async def orchestrate(payload: Dict[str, Any] = Body(...)):
         "status": "ok",
         "mode": "standard",
         "message": "Standard orchestration path executed (URLs present)",
+        # E2E compatibility (no export performed here)
+        "summary": {"mode": "standard"},
+        "export": {"csv_rows": 0, "paths": {}},
     }
 
 

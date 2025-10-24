@@ -1,4 +1,3 @@
-
 # 🔍 OSINT Stack (100% Open-Source) — Dockerized
 
 A fully **open-source** OSINT (Open Source Intelligence) stack that combines modern search technologies, scraping, and data analysis.
@@ -59,9 +58,6 @@ Copy `.env.example` to `.env` and fill in your credentials:
 ```bash
 # Linux/Mac
 cp .env.example .env
-
-# Windows
-copy .env.example .env
 ```
 
 Open `.env` and change the values:
@@ -598,3 +594,17 @@ Open-source project. Use responsibly and in accordance with your country's laws.
 ## ⚠️ Disclaimer
 
 This tool is for **legal OSINT research** and **educational purposes**. The user is responsible for the lawful use of this software.
+
+---
+
+## 🛠 Useful scripts (Unix/WSL only)
+
+Run these from a Bash shell (Linux/macOS or Windows via WSL):
+- Rebuild orchestrator: `bash scripts/rebuild_orchestrator.sh`
+- Normalize SearX config + smoke test: `bash scripts/check_searx_config.sh`
+- Generate secrets for .env: `bash scripts/generate_secrets.sh`
+- Purge shell env history: `bash scripts/purge_env_history.sh`
+
+Windows .bat scripts are deprecated.
+
+---

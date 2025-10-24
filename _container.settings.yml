@@ -11,8 +11,8 @@ server:
   bind_address: "0.0.0.0"
   limiter: false
   methods: [GET, POST]
-  base_url: "http://localhost:8081/"
-  secret_key: "tHS7TsCgLLc3OtXpt/cJVzfzuqstPfHiRQhAukpNM5R0cI8jxB0VNW7n2UcwmAlB"
+  # secret_key: "change-me"   # or set env SEARXNG_SECRET_KEY
+  # base_url: "http://localhost:8081/"  # if you browse via host:8081
 
 ui:
   query_in_title: false
