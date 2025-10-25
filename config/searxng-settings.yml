@@ -1,4 +1,4 @@
-use_default_settings: false
+use_default_settings: true
 
 general:
   debug: false
@@ -12,7 +12,7 @@ server:
   base_url: "http://localhost:8081/"
   limiter: false
   public_instance: false
-  method: "GET"
+  method: "GET"   # secret_key comes from env SEARXNG_SECRET
 
 ui:
   query_in_title: false
@@ -31,33 +31,34 @@ search:
   autocomplete: ""
   default_lang: "en"
   ban_time_on_fail: 10
-  formats: [html, json]
+  formats: [ html, json ]
 
+# Tabs as dict with empty values
 categories_as_tabs:
-  general: "General"
-  images: "Images"
-  videos: "Videos"
-  news: "News"
-  map: "Map"
-  it: "IT"
-  science: "Science"
-  files: "Files"
-  social media: "Social"
+  general:
+  images:
+  videos:
+  news:
+  map:
+  it:
+  science:
+  files:
+  social media:
 
 engines:
-  - { name: duckduckgo,    engine: duckduckgo,    shortcut: ddg, categories: [general], disabled: false }
-  - { name: mojeek,        engine: mojeek,        shortcut: mjk, categories: [general], disabled: false }
-  - { name: wikipedia,     engine: wikipedia,     shortcut: wp,  categories: [general], disabled: false }
-  - { name: reuters,       engine: reuters,       shortcut: reu, categories: [news],    disabled: false }
-  - { name: stackexchange, engine: stackexchange, shortcut: sx,  categories: [it],      disabled: false }
-  - { name: github,        engine: github,        shortcut: gh,  categories: [it],      disabled: false }
-  - { name: openverse,     engine: openverse,     shortcut: ov,  categories: [images],  disabled: false }
-  - { name: svgrepo,       engine: svgrepo,       shortcut: svg, categories: [images],  disabled: false }
-  - { name: wikicommons,   engine: wikicommons,   shortcut: wkc, categories: [images],  wc_search_type: image, disabled: false }
-  - { name: vimeo,         engine: vimeo,                               categories: [videos],  disabled: false }
-  - { name: dailymotion,   engine: dailymotion,                         categories: [videos],  disabled: false }
-  - { name: openstreetmap, engine: openstreetmap, shortcut: osm,        categories: [map],     disabled: false }
-  - { name: photon,        engine: photon,        shortcut: pht,        categories: [map],     disabled: false }
-  - { name: openmeteo,     engine: open_meteo,                          categories: [science], disabled: false }   # display name without underscore
-  - { name: wttr,          engine: wttr,                                categories: [science], disabled: false }
-  - { name: reddit,        engine: reddit,        shortcut: re,         categories: [social media], disabled: true }
+  - { name: duckduckgo,    engine: duckduckgo,    shortcut: ddg, categories: [ general ], disabled: false }
+  - { name: mojeek,        engine: mojeek,        shortcut: mjk, categories: [ general ], disabled: false }
+  - { name: wikipedia,     engine: wikipedia,     shortcut: wp,  categories: [ general ], disabled: false }
+  - { name: reuters,       engine: reuters,       shortcut: reu, categories: [ news ],    disabled: false }
+  - { name: stackexchange, engine: stackexchange, shortcut: sx,  categories: [ it ],      disabled: false }
+  - { name: github,        engine: github,        shortcut: gh,  categories: [ it ],      disabled: false }
+  - { name: openverse,     engine: openverse,     shortcut: ov,  categories: [ images ],  disabled: false }
+  - { name: svgrepo,       engine: svgrepo,       shortcut: svg, categories: [ images ],  disabled: false }
+  - { name: wikicommons,   engine: wikicommons,   shortcut: wkc, categories: [ images ],  wc_search_type: image, disabled: false }
+  - { name: vimeo,         engine: vimeo,                               categories: [ videos ],  disabled: false }
+  - { name: dailymotion,   engine: dailymotion,                         categories: [ videos ],  disabled: false }
+  - { name: openstreetmap, engine: openstreetmap, shortcut: osm,        categories: [ map ],     disabled: false }
+  - { name: photon,        engine: photon,        shortcut: pht,        categories: [ map ],     disabled: false }
+  - { name: openmeteo,     engine: open_meteo,                          categories: [ science ], disabled: false }
+  - { name: wttr,          engine: wttr,                                categories: [ science ], disabled: false }
+  - { name: reddit,        engine: reddit,        shortcut: re,         categories: [ social media ], disabled: true }

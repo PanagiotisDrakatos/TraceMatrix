@@ -1,9 +1,9 @@
 services:
   orchestrator:
+    container_name: osint-orchestrator
     build: ./orchestrator
     working_dir: /app
-    ports:
-      - "8000:8000"
+    ports: ["8000:8000"]
     environment:
       - GOOGLE_CSE_API_KEY=${GOOGLE_CSE_API_KEY}
       - GOOGLE_CSE_CX=${GOOGLE_CSE_CX}
@@ -26,12 +26,9 @@ services:
     depends_on:
       opensearch:
         condition: service_healthy
-      searxng:
-        condition: service_healthy
       redis:
         condition: service_started
-    networks:
-      - osint
+    networks: [osint]
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:8000/docs >/dev/null || exit 1"]
       interval: 10s
@@ -43,23 +40,20 @@ services:
     image: searxng/searxng:latest
     container_name: osint-searxng
     env_file:
-      - .env
+      - .env   # MUST contain SEARXNG_SECRET=<random_long_secret>
     environment:
-      # Χωρίς strict ':?' για να μην σκάει η interpolation αν λείπει προσωρινά το .env
-      - SEARXNG_SECRET=${SEARXNG_SECRET:-__default_fallback__}
-    ports:
-      - "8081:8080"
+      - SEARXNG_SECRET=${SEARXNG_SECRET}
+    ports: ["8081:8080"]
     volumes:
-      - ./searxng:/etc/searxng
+      - ./config/searxng-settings.yml:/etc/searxng/settings.yml
+      - ./searxng-cache:/var/cache/searxng
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:8080/health || exit 1"]
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8080/ >/dev/null || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 30
-    networks:
-      - osint
-
+    networks: [osint]
 
   opensearch:
     image: opensearchproject/opensearch:2
@@ -67,29 +61,19 @@ services:
       - discovery.type=single-node
       - OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m
       - bootstrap.memory_lock=true
-      # 🔴 Κλειστό το security εντελώς:
       - DISABLE_INSTALL_DEMO_CONFIG=true
       - DISABLE_SECURITY_PLUGIN=true
-      # (ΑΝ προτιμάς με security, αφαίρεσε τις 2 παραπάνω και βάλε
-      # OPENSEARCH_INITIAL_ADMIN_PASSWORD=MyStrongPassw0rd! )
     ulimits:
-      memlock:
-        soft: -1
-        hard: -1
+      memlock: { soft: -1, hard: -1 }
       nproc: 65535
-      nofile:
-        soft: 65535
-        hard: 65535
+      nofile: { soft: 65535, hard: 65535 }
     healthcheck:
-      test: [ "CMD-SHELL", "curl -sf http://localhost:9200 >/dev/null || exit 1" ]
+      test: ["CMD-SHELL", "curl -sf http://localhost:9200 >/dev/null || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 30
-    ports:
-      - "9200:9200"
-    networks:
-      - osint
-
+    ports: ["9200:9200"]
+    networks: [osint]
 
   opensearch-dashboards:
     image: opensearchproject/opensearch-dashboards:2
@@ -99,32 +83,27 @@ services:
     depends_on:
       opensearch:
         condition: service_healthy
-    ports:
-      - "5601:5601"
-    networks:
-      - osint
+    ports: ["5601:5601"]
+    networks: [osint]
 
   redis:
     image: redis:7
-    ports:
-      - "6379:6379"
+    ports: ["6379:6379"]
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
       timeout: 3s
       retries: 30
-    networks:
-      - osint
+    networks: [osint]
 
-  # Προαιρετικά / βαριά services στο profile "extras"
+  # Optional extras
   social-analyzer:
     image: bukshee/social-analyzer:latest
     environment:
       - PORT=9005
       - NODE_ENV=production
       - NODE_OPTIONS=--max-old-space-size=256
-    ports:
-      - "9005:9005"
+    ports: ["9005:9005"]
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:9005 >/dev/null || exit 1"]
@@ -132,22 +111,19 @@ services:
       timeout: 5s
       retries: 30
     profiles: ["extras"]
-    networks:
-      - osint
+    networks: [osint]
 
   reacher:
     image: reacherhq/backend:latest
     environment:
       - LOG_LEVEL=info
-    ports:
-      - "8082:8080"
+    ports: ["8082:8080"]
     deploy:
       resources:
         limits:
           memory: 512M
     profiles: ["extras"]
-    networks:
-      - osint
+    networks: [osint]
 
   theharvester:
     image: ghcr.io/laramies/theharvester:latest
@@ -160,20 +136,16 @@ services:
       resources:
         limits:
           memory: 256M
-    profiles:
-      - osint
+    profiles: ["osint"]
+    networks: [osint]
 
   phoneinfoga:
     image: sundowndev/phoneinfoga:latest
     command: "serve -p 8080"
-    ports:
-      - "8083:8080"
-    networks:
-      - osint
+    ports: ["8083:8080"]
+    networks: [osint]
 
-  # ------------------------
-  # 🧪 TEST SERVICE
-  # ------------------------
+  # Unit tests against mocked deps
   orchestrator-tests:
     build: ./orchestrator
     working_dir: /app
@@ -202,12 +174,9 @@ services:
       redis:
         condition: service_healthy
     profiles: ["tests"]
-    networks:
-      - osint
+    networks: [osint]
 
-  # ------------------------
-  # ✅ E2E TEST RUNNER (Solution B)
-  # ------------------------
+  # E2E tests that hit the live orchestrator
   tests-runner:
     build: ./orchestrator
     working_dir: /app
@@ -232,9 +201,8 @@ services:
     depends_on:
       orchestrator:
         condition: service_healthy
-    networks:
-      - osint
+    networks: [osint]
     profiles: ["tests"]
 
 networks:
-  osint:
+  osint: {}
